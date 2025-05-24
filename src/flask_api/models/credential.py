@@ -19,3 +19,19 @@ class Credential(db.Model):
 
     def __repr__(self):
         return f"<Credential {self.username}@{self.domain}>"
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'filename': self.filename,
+            'system': self.system,
+            'software': self.software,
+            'host': self.host,
+            'username': self.username,
+            'password': self.password,
+            'domain': self.domain,
+            'local_part': self.local_part,
+            'email_domain': self.email_domain,
+            'filepath': self.filepath,
+            'stealer_name': self.stealer_name
+        }
