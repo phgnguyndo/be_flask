@@ -44,10 +44,15 @@ def test_db_connection():
         paginated = query.paginate(page=page, per_page=per_page, error_out=False)
 
         data = [credential.to_dict() for credential in paginated.items]
-        return jsonify({"success": True, "data": data, "paginate": {
-            "page": page,
-            "perPage": per_page,
-            "totalRecords": len(credentials)
-        }})
+        return jsonify({
+            "success": True,
+            "data": data,
+            "pagination": {
+                "page": page,
+                "per_page": per_page,
+                "total": paginated.total,
+                "pages": paginated.pages
+            }
+        })
     except Exception as e:
         return jsonify({"success": False, "error": str(e)})
