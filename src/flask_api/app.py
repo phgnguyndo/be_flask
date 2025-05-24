@@ -11,9 +11,12 @@ def create_app():
     db.init_app(app)
 
     # Test route
-    # @app.route("/api/ping")
-    # def ping():
-    #     return jsonify({"message": "pong"})
+    @app.route("/")
+    def ping():
+        return ({"message": 'WELCOME TO MY APP', "routes": {
+            "postData": "/api/trigger-ingest",
+            "getCredentials": '/api/credentials'
+        }})
 
     # Đăng ký Blueprint
     from flask_api.routes.api import api_bp
