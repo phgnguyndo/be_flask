@@ -7,7 +7,9 @@ sys.path.append(os.path.join(os.path.dirname(__file__), "src"))
 from flask_api import create_app
 from flask_api.app import db
 from flask_api.models.credential import Credential
+from flask_api.models.file_entry import FileEntry
 from flask_api.jobs.ingest_json import ingest_new_json_files
+from flask_api.jobs.ingest_file_entries import ingest_new_file_entry_jsons
 
 from flask_apscheduler import APScheduler
 
@@ -25,6 +27,11 @@ with app.app_context():
     def scheduled_ingest():
         print("[Scheduler] Bắt đầu ingest file JSON lúc 19h...")
         ingest_new_json_files()
+
+    @scheduler.task("cron", id="daily_ingest_file_entry", hour=19, minute=0)
+    def scheduled_ingest_file_entry():
+        print("[Scheduler] Bắt đầu ingest FileEntry JSON lúc 19h...")
+        ingest_new_file_entry_jsons()
 
     scheduler.start()
 

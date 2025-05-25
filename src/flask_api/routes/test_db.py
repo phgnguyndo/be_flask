@@ -1,6 +1,7 @@
 from flask import Blueprint, jsonify, request
 from flask_api.app import db
 from flask_api.models import Credential
+from flask_api.models.file_entry import FileEntry
 
 test_db_bp = Blueprint("test_db", __name__, url_prefix="/api")
 
@@ -56,3 +57,47 @@ def test_db_connection():
         })
     except Exception as e:
         return jsonify({"success": False, "error": str(e)})
+    
+@test_db_bp.route("/file-entries")
+def get_file_entries():
+    try:
+        # Lấy filter nếu có
+        name = request.args.get('name', None)
+        path = request.args.get('path', None)
+        filetype = request.args.get('filetype', None)
+        system_dir = request.args.get('system_dir', None)
+
+        # Phân trang
+        try:
+            page = int(request.args.get('page', 1))
+            per_page = int(request.args.get('per_page', 20))
+        except ValueError:
+            return jsonify({"success": False, "error": "page và per_page phải là số nguyên"}), 400
+
+        query = FileEntry.query
+
+        if name:
+            query = query.filter(FileEntry.name.ilike(f'%{name}%'))
+        if path:
+            query = query.filter(FileEntry.path.ilike(f'%{path}%'))
+        if filetype:
+            query = query.filter(FileEntry.filetype.ilike(f'%{filetype}%'))
+        if system_dir:
+            query = query.filter(FileEntry.system_dir.ilike(f'%{system_dir}%'))
+
+        paginated = query.paginate(page=page, per_page=per_page, error_out=False)
+        data = [entry.to_dict() for entry in paginated.items]
+
+        return jsonify({
+            "success": True,
+            "data": data,
+            "pagination": {
+                "page": page,
+                "per_page": per_page,
+                "total": paginated.total,
+                "pages": paginated.pages
+            }
+        })
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)})
+
