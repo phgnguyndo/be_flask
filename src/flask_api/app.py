@@ -18,7 +18,9 @@ def create_app():
     def ping():
         return ({"message": 'WELCOME TO MY APP', "routes": {
             "postData": "/api/trigger-ingest",
-            "getCredentials": '/api/credentials'
+            "getCredentials": '/api/credentials',
+            "postDataFiles":'/api/trigger-ingest-files',
+            "getDataFiles":'/api/file-entries'
         }})
 
     # Đăng ký Blueprint
