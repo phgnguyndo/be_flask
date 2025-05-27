@@ -6,6 +6,8 @@ import os
 import zipfile
 import tempfile
 from flask import send_file
+import rarfile
+import py7zr
 
 test_db_bp = Blueprint("test_db", __name__, url_prefix="/api")
 BASE_PATH = "/home/phuong/Desktop/thuc_tap/Telegram Bot/Downloads"
@@ -115,20 +117,48 @@ def open_file():
 
         full_path = os.path.join(BASE_PATH, rel_path)
 
+        # Xử lý .zip
         if ".zip/" in rel_path:
-            zip_part, internal_path = rel_path.split(".zip/", 1)
-            zip_file = os.path.join(BASE_PATH, f"{zip_part}.zip")
+            archive_type = "zip"
+            archive_ext = ".zip"
+        elif ".rar/" in rel_path:
+            archive_type = "rar"
+            archive_ext = ".rar"
+        elif ".7z/" in rel_path:
+            archive_type = "7z"
+            archive_ext = ".7z"
+        else:
+            archive_type = None
 
-            if not os.path.exists(zip_file):
-                return jsonify({"success": False, "error": "Không tìm thấy file zip"}), 404
+        if archive_type:
+            archive_part, internal_path = rel_path.split(f"{archive_ext}/", 1)
+            archive_file = os.path.join(BASE_PATH, f"{archive_part}{archive_ext}")
 
-            with zipfile.ZipFile(zip_file, 'r') as zf:
-                if internal_path not in zf.namelist():
-                    return jsonify({"success": False, "error": "Không tìm thấy file trong zip"}), 404
+            if not os.path.exists(archive_file):
+                return jsonify({"success": False, "error": f"Không tìm thấy file {archive_type}"}), 404
 
-                tmp_dir = tempfile.mkdtemp()
-                extracted_path = zf.extract(internal_path, path=tmp_dir)
-                return send_file(extracted_path, as_attachment=True)
+            tmp_dir = tempfile.mkdtemp()
+
+            if archive_type == "zip":
+                with zipfile.ZipFile(archive_file, 'r') as zf:
+                    if internal_path not in zf.namelist():
+                        return jsonify({"success": False, "error": "Không tìm thấy file trong zip"}), 404
+                    extracted_path = zf.extract(internal_path, path=tmp_dir)
+
+            elif archive_type == "rar":
+                with rarfile.RarFile(archive_file, 'r') as rf:
+                    if internal_path not in rf.namelist():
+                        return jsonify({"success": False, "error": "Không tìm thấy file trong rar"}), 404
+                    extracted_path = rf.extract(internal_path, path=tmp_dir)
+
+            elif archive_type == "7z":
+                with py7zr.SevenZipFile(archive_file, 'r') as zf:
+                    if internal_path not in zf.getnames():
+                        return jsonify({"success": False, "error": "Không tìm thấy file trong 7z"}), 404
+                    zf.extract(path=tmp_dir, targets=[internal_path])
+                    extracted_path = os.path.join(tmp_dir, internal_path)
+
+            return send_file(extracted_path, as_attachment=True)
 
         else:
             if not os.path.exists(full_path):
