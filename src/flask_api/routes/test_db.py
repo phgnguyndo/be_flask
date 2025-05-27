@@ -2,8 +2,13 @@ from flask import Blueprint, jsonify, request
 from flask_api.app import db
 from flask_api.models import Credential
 from flask_api.models.file_entry import FileEntry
+import os
+import zipfile
+import tempfile
+from flask import send_file
 
 test_db_bp = Blueprint("test_db", __name__, url_prefix="/api")
+BASE_PATH = "/home/phuong/Desktop/thuc_tap/Telegram Bot/Downloads"
 
 @test_db_bp.route("/credentials")
 def test_db_connection():
@@ -100,4 +105,38 @@ def get_file_entries():
         })
     except Exception as e:
         return jsonify({"success": False, "error": str(e)})
+
+@test_db_bp.route("/open-file")
+def open_file():
+    try:
+        rel_path = request.args.get("path")
+        if not rel_path:
+            return jsonify({"success": False, "error": "Thiếu path"}), 400
+
+        full_path = os.path.join(BASE_PATH, rel_path)
+
+        if ".zip/" in rel_path:
+            zip_part, internal_path = rel_path.split(".zip/", 1)
+            zip_file = os.path.join(BASE_PATH, f"{zip_part}.zip")
+
+            if not os.path.exists(zip_file):
+                return jsonify({"success": False, "error": "Không tìm thấy file zip"}), 404
+
+            with zipfile.ZipFile(zip_file, 'r') as zf:
+                if internal_path not in zf.namelist():
+                    return jsonify({"success": False, "error": "Không tìm thấy file trong zip"}), 404
+
+                tmp_dir = tempfile.mkdtemp()
+                extracted_path = zf.extract(internal_path, path=tmp_dir)
+                return send_file(extracted_path, as_attachment=True)
+
+        else:
+            if not os.path.exists(full_path):
+                return jsonify({"success": False, "error": "Không tìm thấy file"}), 404
+
+            return send_file(full_path, as_attachment=True)
+
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)})
+
 
