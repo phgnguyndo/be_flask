@@ -20,7 +20,8 @@ def create_app():
             "postData": "/api/trigger-ingest",
             "getCredentials": '/api/credentials',
             "postDataFiles":'/api/trigger-ingest-files',
-            "getDataFiles":'/api/file-entries'
+            "getDataFiles":'/api/file-entries',
+            "postFile":'/api/upload'
         }})
 
     # Đăng ký Blueprint
