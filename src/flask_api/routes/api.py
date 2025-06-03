@@ -2,6 +2,7 @@ from flask import Blueprint, request, jsonify
 from flask_api.app import db
 from flask_api.jobs.ingest_json import ingest_new_json_files
 from flask_api.jobs.ingest_file_entries import ingest_new_file_entry_jsons
+from flask_api.jobs.ingest_news import ingest_news_json
 import os
 from dotenv import load_dotenv
 load_dotenv()
@@ -51,3 +52,11 @@ def upload_file():
         return jsonify({"success": True, "message": "Tải file lên thành công", "path": save_path})
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 500
+
+@api_bp.route("/trigger-ingest-news", methods=["POST"])
+def trigger_ingest_news():
+    try:
+        ingest_news_json()
+        return jsonify({"success": True, "message": "Đã ingest file JSON chứa news"})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)})
