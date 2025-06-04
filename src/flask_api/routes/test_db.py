@@ -10,11 +10,13 @@ import rarfile
 import py7zr
 from flask_api.models.news import News
 from sqlalchemy import desc
+from flask_login import login_required
 
 test_db_bp = Blueprint("test_db", __name__, url_prefix="/api")
 BASE_PATH = "/home/phuong/Desktop/thuc_tap/Telegram Bot/Downloads"
 
 @test_db_bp.route("/credentials")
+@login_required
 def test_db_connection():
     try:
         # Lấy query parameter 'username' từ request
@@ -68,6 +70,7 @@ def test_db_connection():
         return jsonify({"success": False, "error": str(e)})
 
 @test_db_bp.route("/full-credentials")
+@login_required
 def test_db_connection_v2():
     try:
         # Lấy query parameter từ request
@@ -109,6 +112,7 @@ def test_db_connection_v2():
         return jsonify({"success": False, "error": str(e)})
     
 @test_db_bp.route("/file-entries")
+@login_required
 def get_file_entries():
     try:
         # Lấy filter nếu có
@@ -152,6 +156,7 @@ def get_file_entries():
         return jsonify({"success": False, "error": str(e)})
 
 @test_db_bp.route("/open-file")
+@login_required
 def open_file():
     try:
         rel_path = request.args.get("path")
@@ -213,14 +218,39 @@ def open_file():
         return jsonify({"success": False, "error": str(e)})
     
 @test_db_bp.route("/news")
+@login_required
 def get_news():
     try:
-        page = int(request.args.get("page", 1))
-        per_page = int(request.args.get("per_page", 20))
+        # Lấy các tham số tìm kiếm từ query string
+        title = request.args.get("title", None)
+        content = request.args.get("content", None)
+        group = request.args.get("group", None)
 
-        paginated = News.query.order_by(desc(News.timestamp)).paginate(page=page, per_page=per_page, error_out=False)
+        # Phân trang
+        try:
+            page = int(request.args.get("page", 1))
+            per_page = int(request.args.get("per_page", 20))
+        except ValueError:
+            return jsonify({"success": False, "error": "page và per_page phải là số nguyên"}), 400
+
+        # Bắt đầu truy vấn
+        query = News.query
+
+        # Thêm các bộ lọc tìm kiếm nếu có
+        if title:
+            query = query.filter(News.title.ilike(f'%{title}%'))
+        if content:
+            query = query.filter(News.content.ilike(f'%{content}%'))
+        if group:
+            query = query.filter(News.group.ilike(f'%{group}%'))
+
+        # Sắp xếp theo thời gian mới nhất
+        query = query.order_by(desc(News.timestamp))
+
+        # Phân trang kết quả
+        paginated = query.paginate(page=page, per_page=per_page, error_out=False)
+
         data = [n.to_dict() for n in paginated.items]
-
         return jsonify({
             "success": True,
             "data": data,

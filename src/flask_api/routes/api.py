@@ -57,6 +57,6 @@ def upload_file():
 def trigger_ingest_news():
     try:
         ingest_news_json()
-        return jsonify({"success": True, "message": "Đã ingest file JSON chứa news"})
+        return jsonify({"success": True, "message": "ingested file JSON news"})
     except Exception as e:
         return jsonify({"success": False, "error": str(e)})

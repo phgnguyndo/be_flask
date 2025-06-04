@@ -16,7 +16,9 @@ dependencies = [
     "flask-cors (>=6.0.0,<7.0.0)",
     "flask-apscheduler (>=1.13.1,<2.0.0)",
     "rarfile (>=4.2,<5.0)",
-    "py7zr (>=0.22.0,<0.23.0)"
+    "py7zr (>=0.22.0,<0.23.0)",
+    "flask-login (>=0.6.3,<0.7.0)",
+    "flask-bcrypt (>=1.0.1,<2.0.0)"
 ]
 
 [tool.poetry]
