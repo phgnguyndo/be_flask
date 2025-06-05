@@ -9,11 +9,22 @@ from flask import send_file
 import rarfile
 import py7zr
 from flask_api.models.news import News
-from sqlalchemy import desc
+from sqlalchemy import desc, or_
 from flask_login import login_required
+import re 
+import pycountry
 
 test_db_bp = Blueprint("test_db", __name__, url_prefix="/api")
 BASE_PATH = "/home/phuong/Desktop/thuc_tap/Telegram Bot/Downloads"
+
+# Danh sách mã quốc gia và tên quốc gia (theo chuẩn ISO 3166-1 alpha-2)
+COUNTRY_PREFIXES = {country.alpha_2: country.name for country in pycountry.countries}
+
+def extract_country_prefix(system_dir):
+    if not system_dir or len(system_dir) < 2:
+        return None
+    match = re.match(r'^\[([A-Z]{2})\]|^([A-Z]{2})', system_dir)
+    return match.group(1) or match.group(2) if match else None
 
 @test_db_bp.route("/credentials")
 @login_required
@@ -112,7 +123,7 @@ def test_db_connection_v2():
         return jsonify({"success": False, "error": str(e)})
     
 @test_db_bp.route("/file-entries")
-@login_required
+# @login_required
 def get_file_entries():
     try:
         # Lấy filter nếu có
@@ -120,6 +131,7 @@ def get_file_entries():
         path = request.args.get('path', None)
         filetype = request.args.get('filetype', None)
         system_dir = request.args.get('system_dir', None)
+        country = request.args.get('country', None)
 
         # Phân trang
         try:
@@ -138,6 +150,17 @@ def get_file_entries():
             query = query.filter(FileEntry.filetype.ilike(f'%{filetype}%'))
         if system_dir:
             query = query.filter(FileEntry.system_dir.ilike(f'%{system_dir}%'))
+
+        if country:
+            country = country.upper()
+            if country not in COUNTRY_PREFIXES:
+                return jsonify({"success": False, "error": f"Quốc gia '{country}' không được hỗ trợ"}), 400
+            query = query.filter(
+                or_(
+                    FileEntry.system_dir.startswith(country),
+                    FileEntry.system_dir.startswith(f'[{country}]')
+                )
+            )
 
         paginated = query.paginate(page=page, per_page=per_page, error_out=False)
         data = [entry.to_dict() for entry in paginated.items]
@@ -263,5 +286,17 @@ def get_news():
         })
     except Exception as e:
         return jsonify({"success": False, "error": str(e)})
+    
+@test_db_bp.route("/countries")
+def get_countries():
+    try:
+        # Trả về danh sách mã quốc gia (keys của COUNTRY_PREFIXES)
+        country_codes = list(COUNTRY_PREFIXES.keys())
+        return jsonify({
+            "success": True,
+            "data": country_codes
+        }), 200
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
 
 
