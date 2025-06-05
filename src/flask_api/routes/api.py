@@ -1,10 +1,13 @@
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, current_app
 from flask_api.app import db
 from flask_api.jobs.ingest_json import ingest_new_json_files
 from flask_api.jobs.ingest_file_entries import ingest_new_file_entry_jsons
 from flask_api.jobs.ingest_news import ingest_news_json
+from flask_api.jobs.ingest_post_json import ingest_post_json_files
 import os
 from dotenv import load_dotenv
+from werkzeug.utils import secure_filename
+from config.settings import Config
 load_dotenv()
 
 api_bp = Blueprint("api", __name__, url_prefix="/api")
@@ -27,6 +30,10 @@ def trigger_ingest_file_entries():
         return jsonify({"success": True, "message": "Đã ingest file_entries"})
     except Exception as e:
         return jsonify({"success": False, "error": str(e)})
+    
+@api_bp.route('/trigger-ingest-json', methods=['POST'])
+def trigger_ingest_post_json():
+    return ingest_post_json_files()
 
 def allowed_file(filename):
     return os.path.splitext(filename)[1].lower() in ALLOWED_EXTENSIONS
@@ -60,3 +67,19 @@ def trigger_ingest_news():
         return jsonify({"success": True, "message": "ingested file JSON news"})
     except Exception as e:
         return jsonify({"success": False, "error": str(e)})
+    
+@api_bp.route('/upload-post-json', methods=['POST'])
+def upload_post_json():
+    if 'file' not in request.files:
+        return jsonify({'success': False, 'error': 'No file part'}), 400
+
+    file = request.files['file']
+    if file.filename == '':
+        return jsonify({'success': False, 'error': 'No selected file'}), 400
+
+    filename = secure_filename(file.filename)
+    upload_path = os.path.join(Config.UPLOAD_JSON, filename)
+    os.makedirs(Config.UPLOAD_JSON, exist_ok=True)
+    file.save(upload_path)
+
+    return jsonify({'success': True, 'filename': filename})

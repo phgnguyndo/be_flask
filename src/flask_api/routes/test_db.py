@@ -2,6 +2,7 @@ from flask import Blueprint, jsonify, request
 from flask_api.app import db
 from flask_api.models import Credential
 from flask_api.models.file_entry import FileEntry
+from flask_api.models.post_entry import PostEntry
 import os
 import zipfile
 import tempfile
@@ -299,4 +300,50 @@ def get_countries():
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 500
 
+@test_db_bp.route("/get-entries-json")
+def get_post_entries():
+    try:
+        # Lấy query parameters
+        post_title = request.args.get('post_title', None)
+        group_name = request.args.get('group_name', None)
+        country = request.args.get('country', None)
+        website = request.args.get('website', None)
+        activity = request.args.get('activity', None)
+
+        # Phân trang
+        try:
+            page = int(request.args.get('page', 1))
+            per_page = int(request.args.get('per_page', 20))
+        except ValueError:
+            return jsonify({"success": False, "error": "page and per_page must be int"}), 400
+
+        query = PostEntry.query
+
+        if post_title:
+            query = query.filter(PostEntry.post_title.ilike(f"%{post_title}%"))
+        if group_name:
+            query = query.filter(PostEntry.group_name.ilike(f"%{group_name}%"))
+        if country:
+            query = query.filter(PostEntry.country.ilike(f"%{country}%"))
+        if website:
+            query = query.filter(PostEntry.website.ilike(f"%{website}%"))
+        if activity:
+            query = query.filter(PostEntry.activity.ilike(f"%{activity}%"))
+
+        paginated = query.paginate(page=page, per_page=per_page, error_out=False)
+
+        data = [entry.to_dict() for entry in paginated.items]
+
+        return jsonify({
+            "success": True,
+            "data": data,
+            "pagination": {
+                "page": page,
+                "per_page": per_page,
+                "total": paginated.total,
+                "pages": paginated.pages
+            }
+        })
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)})
 

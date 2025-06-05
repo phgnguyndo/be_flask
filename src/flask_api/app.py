@@ -41,7 +41,10 @@ def create_app():
                 "getDataFiles": "/api/file-entries",
                 "postFile": "/api/upload",
                 "newsfeed": "/api/news",
-                "login":'/auth/login'
+                "login":'/auth/login',
+                "uploadJson": '/api/upload-post-json',
+                "postDataJson": '/api/trigger-ingest-json',
+                "getDataJson":'/api/get-entries-json'
             }
         })
 

@@ -10,3 +10,4 @@ class Config:
         f"@{os.getenv('DB_HOST')}:{os.getenv('DB_PORT')}/{os.getenv('DB_NAME')}"
     )
     SQLALCHEMY_TRACK_MODIFICATIONS = False
+    UPLOAD_JSON = os.getenv("UPLOAD_JSON", "./json_upload")

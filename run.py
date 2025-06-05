@@ -10,6 +10,8 @@ from flask_api.models.credential import Credential
 from flask_api.models.file_entry import FileEntry
 from flask_api.jobs.ingest_json import ingest_new_json_files
 from flask_api.jobs.ingest_file_entries import ingest_new_file_entry_jsons
+from flask_api.jobs.ingest_news import ingest_news_json
+from flask_api.jobs.ingest_post_json import ingest_post_json_files
 from flask_apscheduler import APScheduler
 from apscheduler.schedulers.background import BackgroundScheduler
 
@@ -40,6 +42,24 @@ def scheduled_ingest_file_entry():
             ingest_new_file_entry_jsons()
         except Exception as e:
             print(f"[Scheduler] Error ingest FileEntry JSON: {e}")
+
+@scheduler.task("interval", id="daily_ingest_news", hours=2, minutes=30)
+def scheduled_ingest_news():
+    with app.app_context():
+        try:
+            print("[Scheduler] ingest News JSON every 2h30m...")
+            ingest_news_json()
+        except Exception as e:
+            print(f"[Scheduler] Error ingest News JSON: {e}")
+
+@scheduler.task("cron", id="daily_ingest_json_upload", hour=19, minute=0)
+def scheduled_ingest_json_upload():
+    with app.app_context():
+        try:
+            print("[Scheduler] ingest JSON upload 19h...")
+            ingest_post_json_files()
+        except Exception as e:
+            print(f"[Scheduler] Error ingest JSON upload: {e}")
 
 scheduler.start()
 
